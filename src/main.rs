@@ -14,7 +14,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .app_data(web::Data::new(AppState {
-                app_name: String::from("Actix Web"),
+                app_name: String::from("Arpan Das"),
             }))
             .service(index)
     })
