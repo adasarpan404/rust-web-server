@@ -1,4 +1,4 @@
-use actix_web::{App, HttpServer};
+use actix_web::{web, App, HttpServer};
 mod db;
 mod env;
 mod handlers;
@@ -9,8 +9,12 @@ mod routes;
 async fn main() -> std::io::Result<()> {
     let db = db::get_db().await;
 
-    HttpServer::new(|| App::new().configure(routes::init))
-        .bind("127.0.0.1:8080")?
-        .run()
-        .await
+    HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(db.clone()))
+            .configure(routes::init)
+    })
+    .bind("127.0.0.1:3000")?
+    .run()
+    .await
 }
