@@ -1,4 +1,4 @@
-use crate::models::Item;
+use crate::{constants::ITEMS, models::Item};
 use actix_web::{web, HttpResponse, Responder};
 use mongodb::{
     bson::{doc, oid::ObjectId},
@@ -6,7 +6,7 @@ use mongodb::{
 };
 
 pub async fn create_item(db: web::Data<Database>, item: web::Json<Item>) -> impl Responder {
-    let collection = db.collection::<Item>("items");
+    let collection = db.collection::<Item>(ITEMS);
     let new_item = Item::new(item.name.clone(), item.description.clone());
 
     let insert_result = collection.insert_one(new_item.clone(), None).await;
@@ -18,7 +18,7 @@ pub async fn create_item(db: web::Data<Database>, item: web::Json<Item>) -> impl
 }
 
 pub async fn get_item(db: web::Data<Database>, id: web::Path<String>) -> impl Responder {
-    let collection = db.collection::<Item>("items");
+    let collection = db.collection::<Item>(ITEMS);
 
     let obj_id = match ObjectId::parse_str(&id.into_inner()) {
         Ok(oid) => oid,
@@ -27,6 +27,7 @@ pub async fn get_item(db: web::Data<Database>, id: web::Path<String>) -> impl Re
 
     let filter = doc! { "_id": obj_id };
     let item = collection.find_one(filter, None).await;
+
     match item {
         Ok(Some(item)) => HttpResponse::Ok().json(item),
         Ok(None) => HttpResponse::NotFound().body("Item not found"),
@@ -39,7 +40,7 @@ pub async fn update_item(
     id: web::Path<String>,
     item: web::Json<Item>,
 ) -> impl Responder {
-    let collection = db.collection::<Item>("items");
+    let collection = db.collection::<Item>(ITEMS);
 
     let obj_id = match ObjectId::parse_str(&id.into_inner()) {
         Ok(oid) => oid,
@@ -57,7 +58,7 @@ pub async fn update_item(
 }
 
 pub async fn delete_item(db: web::Data<Database>, id: web::Path<String>) -> impl Responder {
-    let collection = db.collection::<Item>("items");
+    let collection = db.collection::<Item>(ITEMS);
     let obj_id = match ObjectId::parse_str(&id.into_inner()) {
         Ok(oid) => oid,
         Err(_) => return HttpResponse::BadRequest().body("Invalid ObjectId format"),
