@@ -1,3 +1,4 @@
+use crate::routes::init;
 use actix_web::{web, App, HttpServer};
 mod constants;
 mod db;
@@ -13,7 +14,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db.clone()))
-            .configure(routes::init)
+            .configure(init)
     })
     .bind("127.0.0.1:3000")?
     .run()
