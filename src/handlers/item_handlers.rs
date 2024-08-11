@@ -1,5 +1,6 @@
 use crate::{constants::ITEMS, models::Item};
 use actix_web::{web, HttpResponse, Responder};
+use futures_util::stream::TryStreamExt;
 use mongodb::{
     bson::{doc, oid::ObjectId},
     Database,
@@ -16,24 +17,26 @@ pub async fn create_item(db: web::Data<Database>, item: web::Json<Item>) -> impl
         Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
     }
 }
-
 pub async fn get_all_items(db: web::Data<Database>) -> impl Responder {
     let item_collection = db.collection::<Item>(ITEMS);
-    let cursor = item_collection.find(None, None).await;
+    let mut cursor = match item_collection.find(None, None).await {
+        Ok(cursor) => cursor,
+        Err(err) => return HttpResponse::InternalServerError().body(err.to_string()),
+    };
 
-    match cursor {
-        Ok(mut items_cursor) => {
-            let mut items = Vec::new();
-            while let Some(result) = items_cursor.next().await {
-                match result {
-                    Ok(item) => items.push(item),
-                    Err(err) => return HttpResponse::InternalServerError().body(err.to_string()),
-                }
-            }
-            HttpResponse::Ok().json(items)
-        }
-        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+    let mut results = Vec::new();
+
+    while let Ok(Some(document)) = cursor.try_next().await {
+        results.push(document);
     }
+
+    // Check for errors that may have occurred during the final `try_next` call
+    if let Err(err) = cursor.try_next().await {
+        eprintln!("Error fetching document: {}", err);
+        return HttpResponse::InternalServerError().body("Error fetching document");
+    }
+
+    HttpResponse::Ok().json(results)
 }
 
 pub async fn get_item(db: web::Data<Database>, id: web::Path<String>) -> impl Responder {
