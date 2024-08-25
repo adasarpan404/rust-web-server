@@ -11,6 +11,7 @@ use crate::{
 
 pub async fn create_order(db: web::Data<Database>, order: web::Json<Order>) -> impl Responder {
     let order_collection = db.collection::<Order>(ORDERS);
+
     let new_order = Order::new(order.item_id.clone(), order.quantity.clone());
     let insert_result = order_collection.insert_one(new_order.clone(), None).await;
 
